@@ -39,15 +39,8 @@
 #'\dontrun{
 #'## The following call produces plots and genome browser files for all BAM files in "my-data-folder"
 #'Aneufinder(inputfolder="my-data-folder", outputfolder="my-output-folder")}
-#'
-Aneufinder <- function(inputfolder, outputfolder, configfile=NULL, numCPU=1, reuse.existing.files=TRUE, binsizes=1e6, stepsizes=binsizes, variable.width.reference=NULL, reads.per.bin=NULL, pairedEndReads=FALSE, assembly=NULL, chromosomes=NULL, remove.duplicate.reads=TRUE, min.mapq=10, blacklist=NULL, use.bamsignals=FALSE, reads.store=FALSE, correction.method=NULL, GC.BSgenome=NULL, method=c('edivisive'), strandseq=FALSE, R=10, sig.lvl=0.1, eps=0.01, max.time=60, max.iter=5000, num.trials=15, states=c('zero-inflation',paste0(0:10,'-somy')), confint=NULL, refine.breakpoints=FALSE, hotspot.bandwidth=NULL, hotspot.pval=5e-2, cluster.plots=TRUE) {
 
-#=======================
-### Helper functions ###
-#=======================
-as.object <- function(x) {
-  return(eval(parse(text=x)))
-}
+Aneufinder <- function(inputfolder, outputfolder, configfile=NULL, numCPU=1, reuse.existing.files=TRUE, binsizes=1e6, stepsizes=binsizes, variable.width.reference=NULL, reads.per.bin=NULL, pairedEndReads=FALSE, assembly=NULL, chromosomes=NULL, remove.duplicate.reads=TRUE, min.mapq=10, blacklist=NULL, use.bamsignals=FALSE, reads.store=FALSE, correction.method=NULL, GC.BSgenome=NULL, method=c('edivisive'), strandseq=FALSE, R=10, sig.lvl=0.1, eps=0.01, max.time=60, max.iter=5000, num.trials=15, states=c('zero-inflation',paste0(0:10,'-somy')), confint=NULL, refine.breakpoints=FALSE, hotspot.bandwidth=NULL, hotspot.pval=5e-2, cluster.plots=TRUE, sequenceability.bins.list=NULL) {
 
 #========================
 ### General variables ###
@@ -299,7 +292,7 @@ if (numcpu > 1) {
     parallel.helper(file)
   }
 }
-  
+
 ### Read fragments that are not produced yet ###
 if (!conf[['use.bamsignals']] & conf[['reads.store']]) {
   parallel.helper <- function(file) {
@@ -312,7 +305,7 @@ if (!conf[['use.bamsignals']] & conf[['reads.store']]) {
       })
     }
   }
-  
+
   if (numcpu > 1) {
     ptm <- startTimedMessage("Saving reads as .RData ...")
     temp <- foreach (file = files, .packages=c("AneuFinder")) %dopar% {
@@ -371,7 +364,7 @@ if (!is.null(conf[['correction.method']])) {
       if (class(conf[['GC.BSgenome']])!='BSgenome') {
         if (is.character(conf[['GC.BSgenome']])) {
           suppressPackageStartupMessages(library(conf[['GC.BSgenome']], character.only=TRUE))
-          conf[['GC.BSgenome']] <- as.object(conf[['GC.BSgenome']]) # replacing string by object
+          conf[['GC.BSgenome']] <- eval(parse(text(conf[['GC.BSgenome']]))) # replacing string by object
         }
       }
 
@@ -411,12 +404,12 @@ if (!is.null(conf[['correction.method']])) {
         stopTimedMessage(ptm)
       }
     }
-    if (correction.method=='GC+SC') {
+    if (correction.method=='GCSC') {
       ## Load BSgenome
       if (class(conf[['GC.BSgenome']])!='BSgenome') {
         if (is.character(conf[['GC.BSgenome']])) {
           suppressPackageStartupMessages(library(conf[['GC.BSgenome']], character.only=TRUE))
-          conf[['GC.BSgenome']] <- as.object(conf[['GC.BSgenome']]) # replacing string by object
+          conf[['GC.BSgenome']] <- eval(parse(text(conf[['GC.BSgenome']]))) # replacing string by object
         }
       }
 
@@ -431,11 +424,12 @@ if (!is.null(conf[['correction.method']])) {
           binfiles.todo <- paste0(binpath.uncorrected,.Platform$file.sep,binfiles.todo)
           if (grepl('binsize',gsub('\\+','\\\\+',pattern))) {
               binned.data.list <- suppressMessages(correctGCSC(binfiles.todo,
-                                                               sequenceability.bins.list,
                                                                conf[['GC.BSgenome']],
+                                                               sequenceability.bins.list,
                                                                same.binsize=TRUE))
           } else {
-              binned.data.list <- suppressMessages(correctGCSC(binfiles.todo,conf[['GC.BSgenome']],
+              binned.data.list <- suppressMessages(correctGCSC(binfiles.todo,
+                                                               conf[['GC.BSgenome']],
                                                                sequenceability.bins.list,
                                                                same.binsize=FALSE))
           }
