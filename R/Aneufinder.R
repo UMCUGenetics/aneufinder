@@ -364,7 +364,7 @@ if (!is.null(conf[['correction.method']])) {
       if (class(conf[['GC.BSgenome']])!='BSgenome') {
         if (is.character(conf[['GC.BSgenome']])) {
           suppressPackageStartupMessages(library(conf[['GC.BSgenome']], character.only=TRUE))
-          conf[['GC.BSgenome']] <- eval(parse(text(conf[['GC.BSgenome']]))) # replacing string by object
+          conf[['GC.BSgenome']] <- eval(parse(text=conf[['GC.BSgenome']])) # replacing string by object
         }
       }
 
@@ -409,7 +409,7 @@ if (!is.null(conf[['correction.method']])) {
       if (class(conf[['GC.BSgenome']])!='BSgenome') {
         if (is.character(conf[['GC.BSgenome']])) {
           suppressPackageStartupMessages(library(conf[['GC.BSgenome']], character.only=TRUE))
-          conf[['GC.BSgenome']] <- eval(parse(text(conf[['GC.BSgenome']]))) # replacing string by object
+          conf[['GC.BSgenome']] <- eval(parse(text=conf[['GC.BSgenome']])) # replacing string by object
         }
       }
 
