@@ -269,7 +269,7 @@ correctGC <- function(binned.data.list, GC.BSgenome, same.binsize=FALSE, method=
 #'}
 #'
 #' @export
-correctGCSC <- function(binned.data.list, GC.bsgenome, sequenceability.bins.list=NULL, same.binsize=FALSE, method='loess', return.plot=FALSE, bins=NULL) {
+correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list=NULL, same.binsize=FALSE, method='loess', return.plot=FALSE, bins=NULL) {
 
     if (is.null(bins)) {
         ## Determine format of GC.BSgenome
