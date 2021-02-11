@@ -479,7 +479,7 @@ correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list
                                     ranges   = IRanges(start = blist.final.df$start,
                                                        end   = blist.final.df$end))
 
-            values(blist.final) <- blist.final.df[c("counts", "pcounts", "mcounts", "GC", "SC")]
+            values(blist.final) <- blist.final.df[c("counts", "pcounts", "mcounts", "GC", "sequenceability.score")]
         }
         else {
             warning(paste0(attr(binned.data,'ID'),
