@@ -25,6 +25,7 @@
 #' @param hotspot.bandwidth A vector the same length as \code{binsizes} with bandwidths for breakpoint hotspot detection (see \code{\link{hotspotter}} for further details). If \code{NULL}, the bandwidth will be chosen automatically as the average distance between reads.
 #' @param hotspot.pval P-value for breakpoint hotspot detection (see \code{\link{hotspotter}} for further details). Set \code{hotspot.pval = NULL} to skip hotspot detection.
 #' @param cluster.plots A logical indicating whether plots should be clustered by similarity.
+#' @param sequenceability.bins.list The sequenceability correction scores.
 #' @return \code{NULL}
 #' @author Aaron Taudt
 #' @import foreach
