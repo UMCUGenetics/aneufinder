@@ -482,7 +482,7 @@ correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list
                                                                end   = blist.final.df$end))
 
                     values(blist.final) <- blist.final.df[c("counts", "pcounts", "mcounts", "GC", "sequenceability.score")]
-                    blist.gc[[i]] <- blist.final
+                    blist.gc[[i]] <- sort(blist.final)
                 }
             }
         }
