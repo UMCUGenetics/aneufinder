@@ -424,15 +424,15 @@ if (!is.null(conf[['correction.method']])) {
         if (length(binfiles.todo)>0) {
           binfiles.todo <- paste0(binpath.uncorrected,.Platform$file.sep,binfiles.todo)
           if (grepl('binsize',gsub('\\+','\\\\+',pattern))) {
-              binned.data.list <- suppressMessages(correctGCSC(binfiles.todo,
-                                                               conf[['GC.BSgenome']],
-                                                               sequenceability.bins.list,
-                                                               same.binsize=TRUE))
+              binned.data.list <- correctGCSC(binfiles.todo,
+                                              conf[['GC.BSgenome']],
+                                              sequenceability.bins.list,
+                                              same.binsize=TRUE)
           } else {
-              binned.data.list <- suppressMessages(correctGCSC(binfiles.todo,
-                                                               conf[['GC.BSgenome']],
-                                                               sequenceability.bins.list,
-                                                               same.binsize=FALSE))
+              binned.data.list <- correctGCSC(binfiles.todo,
+                                              conf[['GC.BSgenome']],
+                                              sequenceability.bins.list,
+                                              same.binsize=FALSE)
           }
           for (i1 in 1:length(binned.data.list)) {
             binned.data <- binned.data.list[[i1]]
