@@ -286,6 +286,8 @@ correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list
         }
     }
 
+    sequenceability.df <- as.data.frame(sequenceability.bins.list)
+
     ### Loop over all bin entries ###
     binned.data.list <- loadFromFiles(binned.data.list, check.class=c('GRanges','GRangesList'))
     same.binsize.calculated <- FALSE
@@ -467,14 +469,15 @@ correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list
             for (i in 1:length(blist.gc)) {
                 blist.gc.df <- as.data.frame(blist.gc[[i]])
 
-                sequenceability.df <- as.data.frame(sequenceability.bins.list)
+                save(blist.gc.df, file=paste0("blist.gc.df_", i, ".RData"))
+                cat(paste0("Saved ", getwd(), "blist.gc.df_", i, ".RData\n"))
 
                 blist.final.df <- merge (blist.gc.df, sequenceability.df, by=c("seqnames", "start", "end"), all=FALSE)
 
                 ## Apply the sequenceability score to the final blist.
-                blist.final.df$counts  <- as.numeric(round(blist.final.df$counts  * blist.final.df$sequenceability.score))
-                blist.final.df$mcounts <- as.numeric(round(blist.final.df$mcounts * blist.final.df$sequenceability.score))
-                blist.final.df$pcounts <- as.numeric(round(blist.final.df$pcounts * blist.final.df$sequenceability.score))
+                blist.final.df$counts  <- as.integer(round(blist.final.df$counts  * blist.final.df$sequenceability.score))
+                blist.final.df$mcounts <- as.integer(round(blist.final.df$mcounts * blist.final.df$sequenceability.score))
+                blist.final.df$pcounts <- as.integer(round(blist.final.df$pcounts * blist.final.df$sequenceability.score))
 
                 blist.final <- GRanges (seqnames = blist.final.df$seqnames,
                                         ranges   = IRanges(start = blist.final.df$start,
