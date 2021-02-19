@@ -466,25 +466,26 @@ correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list
 
         ### SC correction ###
         if (!is.null(sequenceability.bins.list)) {
-            for (i in 1:length(blist.gc)) {
-                blist.gc.df <- as.data.frame(blist.gc[[i]])
-                blist.final.df <- merge (blist.gc.df, sequenceability.df, by=c("seqnames", "start", "end"), all=FALSE)
+            blist.gc.df <- as.data.frame(blist.gc[[1]])
+            blist.final.df <- merge (blist.gc.df, sequenceability.df, by=c("seqnames", "start", "end"), all=FALSE)
 
-                # Don't touch the output when the ranges between sequenceability.df and blist.gc.df don't match.
-                if (nrow (blist.final.df) > 0) {
-                    ## Apply the sequenceability score to the final blist.
-                    blist.final.df$counts  <- as.integer(round(blist.final.df$counts  * blist.final.df$sequenceability.score))
-                    blist.final.df$mcounts <- as.integer(round(blist.final.df$mcounts * blist.final.df$sequenceability.score))
-                    blist.final.df$pcounts <- as.integer(round(blist.final.df$pcounts * blist.final.df$sequenceability.score))
+            save(blist.final.df, file=paste0("blist.final.df.before.RData"))
+            cat(paste0("Saved ", getwd(), "/blist.final.df.before.RData"))
 
-                    blist.final <- GRanges (seqnames = blist.final.df$seqnames,
-                                            ranges   = IRanges(start = blist.final.df$start,
-                                                               end   = blist.final.df$end))
+            ## Apply the sequenceability score to the final blist.
+            blist.final.df$counts  <- as.integer(round(blist.final.df$counts  * blist.final.df$sequenceability.score))
+            blist.final.df$mcounts <- as.integer(round(blist.final.df$mcounts * blist.final.df$sequenceability.score))
+            blist.final.df$pcounts <- as.integer(round(blist.final.df$pcounts * blist.final.df$sequenceability.score))
 
-                    values(blist.final) <- blist.final.df[c("counts", "pcounts", "mcounts", "GC", "sequenceability.score")]
-                    blist.gc[[i]] <- sort(blist.final)
-                }
-            }
+            save(blist.final.df, file=paste0("blist.final.df.after.RData"))
+            cat(paste0("Saved ", getwd(), "/blist.final.df.after.RData"))
+
+            blist.final <- GRanges (seqnames = blist.final.df$seqnames,
+                                    ranges   = IRanges(start = blist.final.df$start,
+                                                       end   = blist.final.df$end))
+
+            values(blist.final) <- blist.final.df[c("counts", "pcounts", "mcounts", "GC", "sequenceability.score")]
+            blist.gc[[1]] <- sort(blist.final)
         }
         else {
             warning(paste0(attr(binned.data,'ID'),
