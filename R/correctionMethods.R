@@ -296,3 +296,51 @@ correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list
 
     return (gc)
 }
+
+#' Sequenceability correction method.
+#'
+#' @param binned.data.files A \code{list} with \code{\link{binned.data}} objects or a list of filenames containing such objects.
+#' @param sequenceability.bins.list A \code{GRanges} object with sequenceability correction factors for the same bins as in \code{binned.data}.
+#' @author Roel Janssen
+#' @export
+#'@examples
+#'## Get a BED file, bin it and run GC correction
+#'bedfile <- system.file("extdata", "KK150311_VI_07.bam.bed.gz", package="AneuFinderData")
+#'binned <- binReads(bedfile, assembly='mm10', binsize=1e6,
+#'                   chromosomes=c(1:19,'X','Y'))
+#'plot(binned[[1]], type=1)
+#'if (require(BSgenome.Mmusculus.UCSC.mm10)) {
+#'  binned.GC <- correctGC(list(binned[[1]]), GC.BSgenome=BSgenome.Mmusculus.UCSC.mm10)
+#'  plot(binned.GC[[1]], type=1)
+#'}
+#'
+#' @export
+correctSC <- function(binned.data.files, sequenceability.bins.list) {
+    binned.data.list <- loadFromFiles(binned.data.files, check.class=c('GRanges','GRangesList'))
+
+    if (is.null(sequenceability.bins.list)) {
+        warning(paste0(attr(binned.data,'ID'),
+                       ": No 'sequenceability.bins.list' specified.  ",
+                       "No sequenceability factor was applied."))
+    }
+    else {
+        for (index in 1:length(binned.data.files)) {
+            blist <- binned.data.list[[index]][[1]]
+
+            # Add the SC column to the metadata.
+            blist.df                  <- values(blist)
+            blist.df$SC               <- sequenceability.bins.list
+            blist.df$original.counts  <- blist.df$counts
+            blist.df$original.pcounts <- blist.df$pcounts
+            blist.df$original.mcounts <- blist.df$mcounts
+            blist.df$mcounts          <- as.integer(round(blist.df$mcounts * sequenceability.bins.list))
+            blist.df$pcounts          <- as.integer(round(blist.df$pcounts * sequenceability.bins.list))
+            blist.df$counts           <- blist.df$mcounts + blist.df$pcounts
+            values(blist)             <- blist.df
+
+            binned.data.list[[index]][[1]] <- blist
+        }
+    }
+
+    return (binned.data.list)
+}

@@ -350,6 +350,49 @@ if (!conf[['use.bamsignals']] & conf[['reads.store']]) {
   }
 }
 
+#=======================================
+### SEQUENCEABILITY PRE-CALCULATIONS ###
+#=======================================
+
+sequenceability.file <- paste0(outputfolder, "/sequenceability.factors.RData")
+if (!file.exists(sequenceability.file)) {
+    ptm <- startTimedMessage("Determine sequenceability factors ...")
+
+    binned.files  <- list.files(binpath.uncorrected, pattern=".*RData$", full.names=TRUE)
+    numberOfCells <- length(binned.files)
+    numberOfBins  <- length(bins[[1]][[1]])
+
+    totals        <- array(NA, dim = c(numberOfCells, numberOfBins))
+    for (cellIndex in 1:numberOfCells)
+    {
+        file <- binned.files[cellIndex]
+        cell <- get(load(file))
+        for (binIndex in 1:numberOfBins)
+        {
+            totals[cellIndex,binIndex] <- cell[[1]]$counts[binIndex]
+        }
+        rm(cell)
+    }
+
+    medianPerBin <- numeric(numberOfBins)
+    for (binIndex in 1:numberOfBins)
+    {
+        medianPerBin[binIndex] <- median(totals[,binIndex])
+    }
+
+    averageBinCount <- mean(medianPerBin)
+
+    sequenceability.factors <- averageBinCount / medianPerBin
+
+    # When there are no reads in a bin, we'd get an infinite factor.
+    # But we want to ignore these cases, and therefore we set a factor
+    # of 1.0 for these bins.
+    sequenceability.factors[which(!is.finite(sequenceability.factors))] <- 1.0
+
+    save(sequenceability.factors, file=sequenceability.file)
+    stopTimedMessage(ptm)
+}
+
 #=================
 ### Correction ###
 #=================
@@ -434,6 +477,47 @@ if (!is.null(conf[['correction.method']])) {
                                               sequenceability.bins.list,
                                               same.binsize=FALSE)
           }
+          for (i1 in 1:length(binned.data.list)) {
+            binned.data <- binned.data.list[[i1]]
+            savename <- file.path(binpath.corrected, basename(names(binned.data.list)[i1]))
+            save(binned.data, file=savename)
+          }
+        }
+      }
+      if (numcpu > 1) {
+        ptm <- startTimedMessage(paste0(correction.method," correction ..."))
+        temp <- foreach (pattern = patterns, .packages=c("AneuFinder")) %dopar% {
+          parallel.helper(pattern)
+        }
+        stopTimedMessage(ptm)
+      } else {
+        ptm <- startTimedMessage(paste0(correction.method," correction ..."))
+        # temp <- foreach (pattern = patterns, .packages=c("AneuFinder")) %do% {
+        for (pattern in patterns) {
+          parallel.helper(pattern)
+        }
+        stopTimedMessage(ptm)
+      }
+    }
+    if (correction.method=='SC') {
+      ## Load BSgenome
+      if (class(conf[['GC.BSgenome']])!='BSgenome') {
+        if (is.character(conf[['GC.BSgenome']])) {
+          suppressPackageStartupMessages(library(conf[['GC.BSgenome']], character.only=TRUE))
+          conf[['GC.BSgenome']] <- eval(parse(text=conf[['GC.BSgenome']])) # replacing string by object
+        }
+      }
+
+      ## Go through patterns
+      parallel.helper <- function(pattern) {
+        binfiles <- list.files(binpath.uncorrected, pattern='RData$', full.names=TRUE)
+        binfiles <- grep(gsub('\\+','\\\\+',pattern), binfiles, value=TRUE)
+        binfiles.corrected <- list.files(binpath.corrected, pattern='RData$', full.names=TRUE)
+        binfiles.corrected <- grep(gsub('\\+','\\\\+',pattern), binfiles.corrected, value=TRUE)
+        binfiles.todo <- setdiff(basename(binfiles), basename(binfiles.corrected))
+        if (length(binfiles.todo)>0) {
+          binfiles.todo <- paste0(binpath.uncorrected,.Platform$file.sep,binfiles.todo)
+          binned.data.list <- correctSC(binfiles.todo, sequenceability.factors)
           for (i1 in 1:length(binned.data.list)) {
             binned.data <- binned.data.list[[i1]]
             savename <- file.path(binpath.corrected, basename(names(binned.data.list)[i1]))
