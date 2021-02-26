@@ -354,49 +354,51 @@ if (!conf[['use.bamsignals']] & conf[['reads.store']]) {
 ### SEQUENCEABILITY PRE-CALCULATIONS ###
 #=======================================
 
-if (is.null(sequenceability.file)) {
-    sequenceability.file <- paste0(outputfolder, "/sequenceability.factors.", binsizes ,".RData")
-}
+if ('SC' %in% conf[['correction.method']] || 'GCSC' %in% conf[['correction.method']]) {
+    if (is.null(sequenceability.file)) {
+        sequenceability.file <- paste0(outputfolder, "/sequenceability.factors.", binsizes ,".RData")
+    }
 
-if (!file.exists(sequenceability.file)) {
-    ptm <- startTimedMessage("Determine sequenceability factors ...")
+    if (!file.exists(sequenceability.file)) {
+        ptm <- startTimedMessage("Determine sequenceability factors ...")
 
-    binned.files  <- list.files(binpath.uncorrected, pattern=".*RData$", full.names=TRUE)
-    numberOfCells <- length(binned.files)
-    numberOfBins  <- length(bins[[1]][[1]])
+        binned.files  <- list.files(binpath.uncorrected, pattern=".*RData$", full.names=TRUE)
+        numberOfCells <- length(binned.files)
+        numberOfBins  <- length(bins[[1]][[1]])
 
-    totals        <- array(NA, dim = c(numberOfCells, numberOfBins))
-    for (cellIndex in 1:numberOfCells)
-    {
-        file <- binned.files[cellIndex]
-        cell <- get(load(file))
+        totals        <- array(NA, dim = c(numberOfCells, numberOfBins))
+        for (cellIndex in 1:numberOfCells)
+        {
+            file <- binned.files[cellIndex]
+            cell <- get(load(file))
+            for (binIndex in 1:numberOfBins)
+            {
+                totals[cellIndex,binIndex] <- cell[[1]]$counts[binIndex]
+            }
+            rm(cell)
+        }
+
+        medianPerBin <- numeric(numberOfBins)
         for (binIndex in 1:numberOfBins)
         {
-            totals[cellIndex,binIndex] <- cell[[1]]$counts[binIndex]
+            medianPerBin[binIndex] <- median(totals[,binIndex])
         }
-        rm(cell)
+
+        averageBinCount <- mean(medianPerBin)
+
+        sequenceability.factors <- averageBinCount / medianPerBin
+
+        ## When there are no reads in a bin, we'd get an infinite factor.
+        ## But we want to ignore these cases, and therefore we set a factor
+        ## of 1.0 for these bins.
+        sequenceability.factors[which(!is.finite(sequenceability.factors))] <- 1.0
+
+        save(sequenceability.factors, file=sequenceability.file)
+        stopTimedMessage(ptm)
     }
-
-    medianPerBin <- numeric(numberOfBins)
-    for (binIndex in 1:numberOfBins)
-    {
-        medianPerBin[binIndex] <- median(totals[,binIndex])
+    else {
+        sequenceability.factors <- get(load(sequenceability.file))
     }
-
-    averageBinCount <- mean(medianPerBin)
-
-    sequenceability.factors <- averageBinCount / medianPerBin
-
-    # When there are no reads in a bin, we'd get an infinite factor.
-    # But we want to ignore these cases, and therefore we set a factor
-    # of 1.0 for these bins.
-    sequenceability.factors[which(!is.finite(sequenceability.factors))] <- 1.0
-
-    save(sequenceability.factors, file=sequenceability.file)
-    stopTimedMessage(ptm)
-}
-else {
-    sequenceability.factors <- get(load(sequenceability.file))
 }
 
 #=================
