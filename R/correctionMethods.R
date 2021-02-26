@@ -244,7 +244,7 @@ correctGC <- function(binned.data.list, GC.BSgenome, same.binsize=FALSE, method=
 #' Two methods are available for GC correction:  Option \code{method='quadratic'} uses the method described in the Supplementary of \code{citation("AneuFinder")}. Option \code{method='loess'} uses a loess fit to adjust the read count.
 #'
 #' @param binned.data.list A \code{list} with \code{\link{binned.data}} objects or a list of filenames containing such objects.
-#' @param sequenceability.bins.list A \code{GRanges} object with sequenceability correction factors for the same bins as in \code{binned.data}.
+#' @param sequenceability.factors A vector containing the sequenceability correction factors for the same bins as in \code{binned.data}.
 #' @param GC.BSgenome A \code{BSgenome} object which contains the DNA sequence that is used for the GC correction.
 #' @param same.binsize If \code{TRUE} the GC content will only be calculated once. Set this to \code{TRUE} if all \code{\link{binned.data}} objects describe the same genome at the same binsize and stepsize.
 #' @param method One of \code{c('quadratic', 'loess')}. Option \code{method='quadratic'} uses the method described in the Supplementary of \code{citation("AneuFinder")}. Option \code{method='loess'} uses a loess fit to adjust the read count.
@@ -268,73 +268,47 @@ correctGC <- function(binned.data.list, GC.BSgenome, same.binsize=FALSE, method=
 #'}
 #'
 #' @export
-correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.bins.list=NULL, same.binsize=FALSE, method='loess', return.plot=FALSE, bins=NULL) {
+correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.factors=NULL, same.binsize=FALSE, method='loess', return.plot=FALSE, bins=NULL) {
 
     gc                 <- correctGC (binned.data.list, GC.BSgenome, same.binsize, method, return.plot, bins)
-    ranges             <- gc[[1]]
-    ranges.df          <- as.data.frame(ranges)
-    sequenceability.df <- as.data.frame(sequenceability.bins.list)
+    for (i1 in 1:length(gc)) { binned.data <- gc[[i1]] }
 
-    ### SC correction ###
-    if (is.null(sequenceability.bins.list)) {
-        warning(paste0(attr(binned.data,'ID'),
-                       ": No 'sequenceability.bins.list' specified.  ",
-                       "No sequenceability factor was applied."))
-    }
-    else {
-        blist.final.df <- merge (ranges.df, sequenceability.df, by=c("seqnames", "start", "end"), all=FALSE)
-        blist.final.df$counts  <- as.integer(round(blist.final.df$counts  * blist.final.df$sequenceability.score))
-        blist.final.df$mcounts <- as.integer(round(blist.final.df$mcounts * blist.final.df$sequenceability.score))
-        blist.final.df$pcounts <- as.integer(round(blist.final.df$pcounts * blist.final.df$sequenceability.score))
-        blist.final <- GRanges (seqnames = blist.final.df$seqnames,
-                                ranges   = IRanges(start = blist.final.df$start,
-                                                   end   = blist.final.df$end))
-
-        values(blist.final) <- blist.final.df[c("counts", "pcounts", "mcounts", "GC", "sequenceability.score")]
-        gc[[1]] <- sort(blist.final)
-    }
-
-    return (gc)
+    final <- correctSC (binned.data, sequenceability.factors, fileInput=FALSE)
+    return (final)
 }
 
 #' Sequenceability correction method.
 #'
-#' @param binned.data.files A \code{list} with \code{\link{binned.data}} objects or a list of filenames containing such objects.
-#' @param sequenceability.bins.list A \code{GRanges} object with sequenceability correction factors for the same bins as in \code{binned.data}.
+#' @param binned.data A \code{list} with \code{\link{binned.data}} objects or a list of filenames containing such objects.
+#' @param sequenceability.factors A vector with sequenceability correction factors for the same bins as in the \code{binned.data}.
+#' @param fileInput Whether the function should read \code{binned.data} from files.
 #' @author Roel Janssen
 #' @export
-#'@examples
-#'## Get a BED file, bin it and run GC correction
-#'bedfile <- system.file("extdata", "KK150311_VI_07.bam.bed.gz", package="AneuFinderData")
-#'binned <- binReads(bedfile, assembly='mm10', binsize=1e6,
-#'                   chromosomes=c(1:19,'X','Y'))
-#'plot(binned[[1]], type=1)
-#'if (require(BSgenome.Mmusculus.UCSC.mm10)) {
-#'  binned.GC <- correctGC(list(binned[[1]]), GC.BSgenome=BSgenome.Mmusculus.UCSC.mm10)
-#'  plot(binned.GC[[1]], type=1)
-#'}
-#'
-#' @export
-correctSC <- function(binned.data.files, sequenceability.bins.list) {
-    binned.data.list <- loadFromFiles(binned.data.files, check.class=c('GRanges','GRangesList'))
+correctSC <- function(binned.data, sequenceability.factors, fileInput=TRUE) {
+    if (! fileInput) {
+        binned.data.list <- binned.data
+    }
+    else {
+        binned.data.list <- loadFromFiles(binned.data, check.class=c('GRanges','GRangesList'))
+    }
 
-    if (is.null(sequenceability.bins.list)) {
+    if (is.null(sequenceability.factors)) {
         warning(paste0(attr(binned.data,'ID'),
-                       ": No 'sequenceability.bins.list' specified.  ",
+                       ": No 'sequenceability.factors' specified.  ",
                        "No sequenceability factor was applied."))
     }
     else {
-        for (index in 1:length(binned.data.files)) {
+        for (index in 1:length(binned.data)) {
             blist <- binned.data.list[[index]][[1]]
 
             # Add the SC column to the metadata.
             blist.df                  <- values(blist)
-            blist.df$SC               <- sequenceability.bins.list
+            blist.df$SC               <- sequenceability.factors
             blist.df$original.counts  <- blist.df$counts
             blist.df$original.pcounts <- blist.df$pcounts
             blist.df$original.mcounts <- blist.df$mcounts
-            blist.df$mcounts          <- as.integer(round(blist.df$mcounts * sequenceability.bins.list))
-            blist.df$pcounts          <- as.integer(round(blist.df$pcounts * sequenceability.bins.list))
+            blist.df$mcounts          <- as.integer(round(blist.df$mcounts * sequenceability.factors))
+            blist.df$pcounts          <- as.integer(round(blist.df$pcounts * sequenceability.factors))
             blist.df$counts           <- blist.df$mcounts + blist.df$pcounts
             values(blist)             <- blist.df
 
