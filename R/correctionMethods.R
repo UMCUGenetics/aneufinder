@@ -270,10 +270,8 @@ correctGC <- function(binned.data.list, GC.BSgenome, same.binsize=FALSE, method=
 #' @export
 correctGCSC <- function(binned.data.list, GC.BSgenome, sequenceability.factors=NULL, same.binsize=FALSE, method='loess', return.plot=FALSE, bins=NULL) {
 
-    gc                 <- correctGC (binned.data.list, GC.BSgenome, same.binsize, method, return.plot, bins)
-    for (i1 in 1:length(gc)) { binned.data <- gc[[i1]] }
-
-    final <- correctSC (binned.data, sequenceability.factors, fileInput=FALSE)
+    gc    <- correctGC (binned.data.list, GC.BSgenome, same.binsize, method, return.plot, bins)
+    final <- correctSC (gc, sequenceability.factors, fileInput=FALSE)
     return (final)
 }
 
