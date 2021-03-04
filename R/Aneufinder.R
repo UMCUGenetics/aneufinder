@@ -26,6 +26,7 @@
 #' @param hotspot.pval P-value for breakpoint hotspot detection (see \code{\link{hotspotter}} for further details). Set \code{hotspot.pval = NULL} to skip hotspot detection.
 #' @param cluster.plots A logical indicating whether plots should be clustered by similarity.
 #' @param sequenceability.file File containing sequenceability correction scores.
+#' @param stop.after.binning Stop after creating corrected bins.
 #' @return \code{NULL}
 #' @author Aaron Taudt
 #' @import foreach
@@ -41,7 +42,7 @@
 #'## The following call produces plots and genome browser files for all BAM files in "my-data-folder"
 #'Aneufinder(inputfolder="my-data-folder", outputfolder="my-output-folder")}
 
-Aneufinder <- function(inputfolder, outputfolder, configfile=NULL, numCPU=1, reuse.existing.files=TRUE, binsizes=1e6, stepsizes=binsizes, variable.width.reference=NULL, reads.per.bin=NULL, pairedEndReads=FALSE, assembly=NULL, chromosomes=NULL, remove.duplicate.reads=TRUE, min.mapq=10, blacklist=NULL, use.bamsignals=FALSE, reads.store=FALSE, correction.method=NULL, GC.BSgenome=NULL, method=c('edivisive'), strandseq=FALSE, R=10, sig.lvl=0.1, eps=0.01, max.time=60, max.iter=5000, num.trials=15, states=c('zero-inflation',paste0(0:10,'-somy')), confint=NULL, refine.breakpoints=FALSE, hotspot.bandwidth=NULL, hotspot.pval=5e-2, cluster.plots=TRUE, sequenceability.file=NULL) {
+Aneufinder <- function(inputfolder, outputfolder, configfile=NULL, numCPU=1, reuse.existing.files=TRUE, binsizes=1e6, stepsizes=binsizes, variable.width.reference=NULL, reads.per.bin=NULL, pairedEndReads=FALSE, assembly=NULL, chromosomes=NULL, remove.duplicate.reads=TRUE, min.mapq=10, blacklist=NULL, use.bamsignals=FALSE, reads.store=FALSE, correction.method=NULL, GC.BSgenome=NULL, method=c('edivisive'), strandseq=FALSE, R=10, sig.lvl=0.1, eps=0.01, max.time=60, max.iter=5000, num.trials=15, states=c('zero-inflation',paste0(0:10,'-somy')), confint=NULL, refine.breakpoints=FALSE, hotspot.bandwidth=NULL, hotspot.pval=5e-2, cluster.plots=TRUE, sequenceability.file=NULL, stop.after.binning=FALSE) {
 
 #========================
 ### General variables ###
@@ -556,6 +557,7 @@ if (!is.null(conf[['correction.method']])) {
   binpath <- binpath.uncorrected
 }
 
+if (stop.after.binning) { return (NULL) }
 
 #===============
 ### findCNVs ###
